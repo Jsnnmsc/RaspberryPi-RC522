@@ -1,16 +1,13 @@
+import RPi.GPIO as GPIO
+import MFRC522
 import signal
 import time
-import MFRC522
-import RPi.GPIO as GPIO
 
 MIF = MFRC522.MFRC522()
 
 
 def Scan():
     global status
-    # Use MI_OK to check status is going well
-    # If not it will looping until MI_OK to check status is True
-    # Because when Mifare is error the value is "2", Good is "0"
     while status != MIF.MI_OK:
         (status, TagType) = MIF.MFRC522_Request(MIF.PICC_REQIDL)
         print("Rescaning...Place your tag in front of the scanner...")
@@ -29,9 +26,24 @@ Scan()
 # Get the UID of the tag
 (status, uid) = MIF.MFRC522_Anticoll()
 
-# Turn UID into Heximal
-UIDorigin = str(hex(uid[0])[2:].zfill(2)) + str(hex(uid[1])[2:].zfill(2)) + \
-    str(hex(uid[2])[2:].zfill(2)) + str(hex(uid[3])[2:].zfill(2))
+print(f"UID : {uid[0]},{uid[1]},{uid[2]},{uid[3]}")
 
-print(uid)
-print(f"Your UID(hex) is {UIDorigin}")
+# Set the default key, its gonna use on authentication with uid
+default_key = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, ]
+
+Size = MIF.MFRC522_SelectTag(uid)
+
+if status == MIF.MI_OK:
+
+    write_in_data = []
+
+    # Every sector have 16 spaces
+    for i in range(0, 16):
+        write_in_data.append(0xFF)
+
+    # Authentication with the default_key
+    MIF.MFRC522_Auth(MIF.PICC_AUTHENT1A, 0, default_key, uid)
+
+    for i in range(0, 10):
+        print(i)
+        MIF.MFRC522_Read(i)
